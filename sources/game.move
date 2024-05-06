@@ -1,4 +1,4 @@
-module wedding_marketplace::marketplace {
+module wedding_marketplace::wedding_marketplace {
     use std::option::{Option, some, none};
     use sui::object::{Self, UID};
     use sui::tx_context::{Self, TxContext};
