@@ -97,7 +97,7 @@ module wedding_marketplace::test_marketplace {
 
         // Create a new wedding package for this vendor
         let package = wedding_marketplace::marketplace::create_package(
-            vendor.id,
+            &vendor.id,
             string::utf8(b"Gold Package"),
             5000,
             string::utf8(b"Full-day photography coverage"),
@@ -139,8 +139,8 @@ module wedding_marketplace::test_marketplace {
 
         // Create a new booking
         let booking = wedding_marketplace::marketplace::create_booking(
-            vendor.id,
-            customer.id,
+            &vendor.id,
+            &customer.id,
             1672531200, // Arbitrary Unix timestamp for a wedding date
             string::utf8(b"Booked"),
             ts::ctx(scenario),
@@ -188,8 +188,8 @@ module wedding_marketplace::test_marketplace {
 
         // Create a new customer review for the vendor
         let review = wedding_marketplace::marketplace::create_review(
-            vendor.id,
-            customer.id,
+            &vendor.id,
+            &customer.id,
             8,  // Out of 10
             string::utf8(b"Great service and music!"),
             ts::ctx(scenario),
