@@ -10,15 +10,6 @@ module Wedding::marketplace {
     use std::string::{String};
     use std::vector::{Self};
 
-    /// Vendor struct with basic details
-    struct Vendor has key, store {
-        id: UID,
-        name: String,
-        description: String,
-        contact: String,
-        service_type: String,  // e.g., "Photographer", "Florist", etc.
-    }
-
     /// Wedding package with price and details
     struct WeddingPackage has key {
         id: UID,
@@ -28,6 +19,11 @@ module Wedding::marketplace {
         balance: Balance<SUI>,
         details: String,
         review: Table<address,CustomerReview >
+    }
+
+    struct WeddingCap has key, store {
+        id: UID,
+        for: ID
     }
 
     /// Booking struct representing a booking made by a couple
@@ -82,38 +78,29 @@ module Wedding::marketplace {
         }
     }
 
-    public fun create_vendor(
-        name: String,
-        description: String,
-        contact: String,
-        service_type: String,
-        ctx: &mut TxContext,
-    ): Vendor {
-        Vendor {
-            id: object::new(ctx),
-            name,
-            description,
-            contact,
-            service_type,
-        }
-    }
-
     public fun create_package(
         vendor_id: ID,
         name: String,
         price: u64,
         details: String,
         ctx: &mut TxContext,
-    ) {
+    ) : WeddingCap {
+        let id_ = object::new(ctx);
+        let inner_ = object::uid_to_inner(&id_);
         transfer::share_object(WeddingPackage {
-            id: object::new(ctx),
+            id: id_,
             vendor_id,
             name,
             price,
             balance: balance::zero(),
             details,
             review: table::new(ctx)
-        })
+        });
+
+        WeddingCap{
+            id: object::new(ctx),
+            for: inner_
+        }
     }
 
     public fun create_booking(
@@ -134,10 +121,6 @@ module Wedding::marketplace {
 
     // Functions to read data
 
-    public fun get_vendor(vendor: &Vendor): &Vendor {
-        vendor
-    }
-
     public fun get_package(package: &WeddingPackage): &WeddingPackage {
         package
     }
@@ -155,10 +138,6 @@ module Wedding::marketplace {
     }
 
     // Functions to update entities
-
-    public fun update_vendor_name(vendor: &mut Vendor, new_name: String) {
-        vendor.name = new_name;
-    }
 
     public fun update_package_price(wedding_package: &mut WeddingPackage, new_price: u64) {
         wedding_package.price = new_price;
@@ -182,13 +161,13 @@ module Wedding::marketplace {
 
     // Functions to delete entities
 
-    public fun delete_vendor(vendor: Vendor) {
-        let Vendor {
+    public fun delete_vendor(vendor: Booking) {
+        let Booking {
             id,
-            name:_,
-            description: _,
-            contact: _,
-            service_type: _
+            vendor_id:_,
+            customer_id: _,
+            wedding_date: _,
+            status: _
         } = vendor;
 
         object::delete(id);
