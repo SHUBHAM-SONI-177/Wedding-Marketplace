@@ -3,6 +3,10 @@ module Wedding::marketplace {
     use sui::tx_context::{Self, TxContext};
     use sui::package::{Self, Publisher};
     use sui::transfer;
+    use sui::table::{Self, Table};
+    use sui::balance::{Self, Balance};
+    use sui::sui::{SUI};
+
     use std::string::{String};
     use std::vector::{Self};
 
@@ -21,7 +25,9 @@ module Wedding::marketplace {
         vendor_id: ID,
         name: String,
         price: u64,
+        balance: Balance<SUI>,
         details: String,
+        review: Table<address,CustomerReview >
     }
 
     /// Booking struct representing a booking made by a couple
@@ -34,8 +40,7 @@ module Wedding::marketplace {
     }
 
     /// Customer Review struct
-    struct CustomerReview has key {
-        id: UID,
+    struct CustomerReview has store, copy, drop {
         vendor_id: ID,
         customer_id: ID,
         rating: u8,           // Rating out of 10
@@ -99,14 +104,16 @@ module Wedding::marketplace {
         price: u64,
         details: String,
         ctx: &mut TxContext,
-    ): WeddingPackage {
-        WeddingPackage {
+    ) {
+        transfer::share_object(WeddingPackage {
             id: object::new(ctx),
             vendor_id,
             name,
             price,
+            balance: balance::zero(),
             details,
-        }
+            review: table::new(ctx)
+        })
     }
 
     public fun create_booking(
@@ -122,22 +129,6 @@ module Wedding::marketplace {
             customer_id,
             wedding_date,
             status,
-        }
-    }
-
-    public fun create_review(
-        vendor_id: ID,
-        customer_id: ID,
-        rating: u8,
-        comments: String,
-        ctx: &mut TxContext,
-    ): CustomerReview {
-        CustomerReview {
-            id: object::new(ctx),
-            vendor_id,
-            customer_id,
-            rating,
-            comments,
         }
     }
 
