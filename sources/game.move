@@ -1,10 +1,10 @@
-module wedding_marketplace::marketplace {
+module Wedding::marketplace {
     use sui::object::{Self, UID};
     use sui::tx_context::{Self, TxContext};
     use sui::package::{Self, Publisher};
     use sui::transfer;
     use std::string::{String};
-    use sui::vector::{Self};
+    use std::vector::{Self};
 
     /// Vendor struct with basic details
     struct Vendor has key, store {
@@ -193,23 +193,15 @@ module wedding_marketplace::marketplace {
     // Functions to delete entities
 
     public fun delete_vendor(vendor: Vendor) {
-        object::delete(vendor.id);
-    }
+        let Vendor {
+            id,
+            name:_,
+            description: _,
+            contact: _,
+            service_type: _
+        } = vendor;
 
-    public fun delete_package(package: WeddingPackage) {
-        object::delete(package.id);
-    }
-
-    public fun delete_booking(booking: Booking) {
-        object::delete(booking.id);
-    }
-
-    public fun delete_review(review: CustomerReview) {
-        object::delete(review.id);
-    }
-
-    public fun delete_customer(customer: Customer) {
-        object::delete(customer.id);
+        object::delete(id);
     }
 
     // =================== Helper Functions ===================
