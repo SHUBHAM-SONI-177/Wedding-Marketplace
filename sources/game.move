@@ -58,8 +58,7 @@ module Wedding::marketplace {
     /// Initialize the marketplace and transfer Admin capability to the initializer
     fun init(ctx: &mut TxContext) {
         // Create AdminCap and transfer it to the context sender
-        let admin_cap = AdminCap { id: object::new(ctx) };
-        transfer::transfer(admin_cap, tx_context::sender(ctx));
+        transfer::transfer(AdminCap { id: object::new(ctx) }, tx_context::sender(ctx));
     }
 
     // Functions to create new entities
