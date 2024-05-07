@@ -44,8 +44,6 @@ module Wedding::marketplace {
 
     /// Customer Review struct
     struct CustomerReview has store, copy, drop {
-        vendor_id: ID,
-        customer_id: ID,
         rating: u8,           // Rating out of 10
         comments: String,     // Customer comments
     }
@@ -119,6 +117,15 @@ module Wedding::marketplace {
         coin::put(&mut self.balance, coin);
         option::fill(&mut self.taken, sender(ctx));
         self.active = true;
+    }
+
+    public fun feedback(self: &mut WeddingPackage, rating_: u8, comments_: String, ctx: &mut TxContext) {
+        assert!(self.active, ERROR_WEDDING_TAKEN);
+        let review = CustomerReview {
+            rating: rating_,
+            comments: comments_
+        };
+        table::add(&mut self.review, sender(ctx), review);
     }
 
     public fun create_booking(
