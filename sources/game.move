@@ -1,7 +1,6 @@
 module Wedding::marketplace {
     use sui::object::{Self, UID, ID};
     use sui::tx_context::{Self, TxContext, sender};
-    use sui::package::{Self, Publisher};
     use sui::transfer;
     use sui::table::{Self, Table};
     use sui::balance::{Self, Balance};
@@ -9,7 +8,6 @@ module Wedding::marketplace {
     use sui::sui::{SUI};
 
     use std::string::{String};
-    use std::vector::{Self};
     use std::option::{Self, Option};
 
     const ERROR_WEDDING_TAKEN: u64 = 0;
