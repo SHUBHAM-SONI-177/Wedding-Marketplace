@@ -9,6 +9,7 @@ module Wedding::marketplace {
 
     use std::string::{String};
     use std::vector::{Self};
+    use std::option::{Self, Option};
 
     /// Wedding package with price and details
     struct WeddingPackage has key {
@@ -18,6 +19,8 @@ module Wedding::marketplace {
         price: u64,
         balance: Balance<SUI>,
         details: String,
+        taken: Option<address>,
+        active: bool,
         review: Table<address,CustomerReview >
     }
 
@@ -78,7 +81,7 @@ module Wedding::marketplace {
         }
     }
 
-    public fun create_package(
+    public fun new(
         vendor_id: ID,
         name: String,
         price: u64,
@@ -94,6 +97,8 @@ module Wedding::marketplace {
             price,
             balance: balance::zero(),
             details,
+            taken: option::none(),
+            active: false,
             review: table::new(ctx)
         });
 
