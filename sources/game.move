@@ -1,5 +1,5 @@
 module Wedding::marketplace {
-    use sui::object::{Self, UID};
+    use sui::object::{Self, UID, ID};
     use sui::tx_context::{Self, TxContext};
     use sui::package::{Self, Publisher};
     use sui::transfer;
@@ -18,7 +18,7 @@ module Wedding::marketplace {
     /// Wedding package with price and details
     struct WeddingPackage has key {
         id: UID,
-        vendor_id: UID,
+        vendor_id: ID,
         name: String,
         price: u64,
         details: String,
@@ -27,8 +27,8 @@ module Wedding::marketplace {
     /// Booking struct representing a booking made by a couple
     struct Booking has key {
         id: UID,
-        vendor_id: UID,
-        customer_id: UID,
+        vendor_id: ID,
+        customer_id: ID,
         wedding_date: u64,  // Using u64 for simplicity
         status: String,     // e.g., "Booked", "Confirmed", etc.
     }
@@ -36,8 +36,8 @@ module Wedding::marketplace {
     /// Customer Review struct
     struct CustomerReview has key {
         id: UID,
-        vendor_id: UID,
-        customer_id: UID,
+        vendor_id: ID,
+        customer_id: ID,
         rating: u8,           // Rating out of 10
         comments: String,     // Customer comments
     }
@@ -94,7 +94,7 @@ module Wedding::marketplace {
     }
 
     public fun create_package(
-        vendor_id: UID,
+        vendor_id: ID,
         name: String,
         price: u64,
         details: String,
@@ -110,8 +110,8 @@ module Wedding::marketplace {
     }
 
     public fun create_booking(
-        vendor_id: UID,
-        customer_id: UID,
+        vendor_id: ID,
+        customer_id: ID,
         wedding_date: u64,
         status: String,
         ctx: &mut TxContext,
@@ -126,8 +126,8 @@ module Wedding::marketplace {
     }
 
     public fun create_review(
-        vendor_id: UID,
-        customer_id: UID,
+        vendor_id: ID,
+        customer_id: ID,
         rating: u8,
         comments: String,
         ctx: &mut TxContext,
