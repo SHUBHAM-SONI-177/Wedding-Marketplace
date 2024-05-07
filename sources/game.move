@@ -1,15 +1,19 @@
 module Wedding::marketplace {
     use sui::object::{Self, UID, ID};
-    use sui::tx_context::{Self, TxContext};
+    use sui::tx_context::{Self, TxContext, sender};
     use sui::package::{Self, Publisher};
     use sui::transfer;
     use sui::table::{Self, Table};
     use sui::balance::{Self, Balance};
+    use sui::coin::{Self, Coin};
     use sui::sui::{SUI};
 
     use std::string::{String};
     use std::vector::{Self};
     use std::option::{Self, Option};
+
+    const ERROR_WEDDING_TAKEN: u64 = 0;
+    const ERROR_INSUFFCIENT_FUNDS: u64 = 1;
 
     /// Wedding package with price and details
     struct WeddingPackage has key {
@@ -106,6 +110,15 @@ module Wedding::marketplace {
             id: object::new(ctx),
             for: inner_
         }
+    }
+
+    public fun take(self: &mut WeddingPackage, coin: Coin<SUI>, ctx: &mut TxContext) {
+        assert!(!self.active, ERROR_WEDDING_TAKEN);
+        assert!(coin::value(&coin) == self.price, ERROR_INSUFFCIENT_FUNDS);
+        // put the coin to the share object 
+        coin::put(&mut self.balance, coin);
+        option::fill(&mut self.taken, sender(ctx));
+        self.active = true;
     }
 
     public fun create_booking(
