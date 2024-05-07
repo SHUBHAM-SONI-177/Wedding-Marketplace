@@ -14,6 +14,7 @@ module Wedding::marketplace {
 
     const ERROR_WEDDING_TAKEN: u64 = 0;
     const ERROR_INSUFFCIENT_FUNDS: u64 = 1;
+    const ERROR_NOT_OWNER: u64 = 2;
 
     /// Wedding package with price and details
     struct WeddingPackage has key {
@@ -126,6 +127,13 @@ module Wedding::marketplace {
             comments: comments_
         };
         table::add(&mut self.review, sender(ctx), review);
+    }
+
+    public fun withdraw(cap: &WeddingCap, self: &mut WeddingPackage, ctx: &mut TxContext) : Coin<SUI> {
+        assert!(object::id(self) == cap.for, ERROR_NOT_OWNER);
+        let amount = balance::value(&self.balance);
+        let coin_ = coin::take(&mut self.balance, amount, ctx);
+        coin_
     }
 
     public fun create_booking(
