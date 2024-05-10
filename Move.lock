@@ -2,7 +2,7 @@
 
 [move]
 version = 0
-manifest_digest = "281F53B6F122B508EADCA92F538519635D560AB827574AE2E2A796727C222DB0"
+manifest_digest = "6A4304589686737A5955443608943E58BF0503FF340B707C3C0CA7528C99D82B"
 deps_digest = "F8BBB0CCB2491CA29A3DF03D6F92277A4F3574266507ACD77214D37ECA3F3082"
 
 dependencies = [
@@ -22,6 +22,6 @@ dependencies = [
 ]
 
 [move.toolchain-version]
-compiler-version = "1.22.0"
+compiler-version = "1.24.0"
 edition = "legacy"
 flavor = "sui"

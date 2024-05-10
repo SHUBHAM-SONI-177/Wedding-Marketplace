@@ -1,43 +1,48 @@
-module wedding_marketplace::marketplace {
-    use sui::object::{Self, UID};
-    use sui::tx_context::{Self, TxContext};
-    use sui::package::{Self, Publisher};
+module Wedding::marketplace {
+    use sui::object::{Self, UID, ID};
+    use sui::tx_context::{Self, TxContext, sender};
     use sui::transfer;
-    use std::string::{String};
-    use sui::vector::{Self};
+    use sui::table::{Self, Table};
+    use sui::balance::{Self, Balance};
+    use sui::coin::{Self, Coin};
+    use sui::sui::{SUI};
 
-    /// Vendor struct with basic details
-    struct Vendor has key, store {
-        id: UID,
-        name: String,
-        description: String,
-        contact: String,
-        service_type: String,  // e.g., "Photographer", "Florist", etc.
-    }
+    use std::string::{String};
+    use std::option::{Self, Option};
+
+    const ERROR_WEDDING_TAKEN: u64 = 0;
+    const ERROR_INSUFFCIENT_FUNDS: u64 = 1;
+    const ERROR_NOT_OWNER: u64 = 2;
 
     /// Wedding package with price and details
     struct WeddingPackage has key {
         id: UID,
-        vendor_id: UID,
+        vendor_id: ID,
         name: String,
         price: u64,
+        balance: Balance<SUI>,
         details: String,
+        taken: Option<address>,
+        active: bool,
+        review: Table<address,CustomerReview >
+    }
+
+    struct WeddingCap has key, store {
+        id: UID,
+        for: ID
     }
 
     /// Booking struct representing a booking made by a couple
     struct Booking has key {
         id: UID,
-        vendor_id: UID,
-        customer_id: UID,
+        vendor_id: ID,
+        customer_id: ID,
         wedding_date: u64,  // Using u64 for simplicity
         status: String,     // e.g., "Booked", "Confirmed", etc.
     }
 
     /// Customer Review struct
-    struct CustomerReview has key {
-        id: UID,
-        vendor_id: UID,
-        customer_id: UID,
+    struct CustomerReview has store, copy, drop {
         rating: u8,           // Rating out of 10
         comments: String,     // Customer comments
     }
@@ -58,8 +63,7 @@ module wedding_marketplace::marketplace {
     /// Initialize the marketplace and transfer Admin capability to the initializer
     fun init(ctx: &mut TxContext) {
         // Create AdminCap and transfer it to the context sender
-        let admin_cap = AdminCap { id: object::new(ctx) };
-        transfer::transfer(admin_cap, tx_context::sender(ctx));
+        transfer::transfer(AdminCap { id: object::new(ctx) }, tx_context::sender(ctx));
     }
 
     // Functions to create new entities
@@ -78,41 +82,61 @@ module wedding_marketplace::marketplace {
         }
     }
 
-    public fun create_vendor(
-        name: String,
-        description: String,
-        contact: String,
-        service_type: String,
-        ctx: &mut TxContext,
-    ): Vendor {
-        Vendor {
-            id: object::new(ctx),
-            name,
-            description,
-            contact,
-            service_type,
-        }
-    }
-
-    public fun create_package(
-        vendor_id: UID,
+    public fun new(
+        vendor_id: ID,
         name: String,
         price: u64,
         details: String,
         ctx: &mut TxContext,
-    ): WeddingPackage {
-        WeddingPackage {
-            id: object::new(ctx),
+    ) : WeddingCap {
+        let id_ = object::new(ctx);
+        let inner_ = object::uid_to_inner(&id_);
+        transfer::share_object(WeddingPackage {
+            id: id_,
             vendor_id,
             name,
             price,
+            balance: balance::zero(),
             details,
+            taken: option::none(),
+            active: false,
+            review: table::new(ctx)
+        });
+
+        WeddingCap{
+            id: object::new(ctx),
+            for: inner_
         }
     }
 
+    public fun take(self: &mut WeddingPackage, coin: Coin<SUI>, ctx: &mut TxContext) {
+        assert!(!self.active, ERROR_WEDDING_TAKEN);
+        assert!(coin::value(&coin) == self.price, ERROR_INSUFFCIENT_FUNDS);
+        // put the coin to the share object 
+        coin::put(&mut self.balance, coin);
+        option::fill(&mut self.taken, sender(ctx));
+        self.active = true;
+    }
+
+    public fun feedback(self: &mut WeddingPackage, rating_: u8, comments_: String, ctx: &mut TxContext) {
+        assert!(self.active, ERROR_WEDDING_TAKEN);
+        let review = CustomerReview {
+            rating: rating_,
+            comments: comments_
+        };
+        table::add(&mut self.review, sender(ctx), review);
+    }
+
+    public fun withdraw(cap: &WeddingCap, self: &mut WeddingPackage, ctx: &mut TxContext) : Coin<SUI> {
+        assert!(object::id(self) == cap.for, ERROR_NOT_OWNER);
+        let amount = balance::value(&self.balance);
+        let coin_ = coin::take(&mut self.balance, amount, ctx);
+        coin_
+    }
+
     public fun create_booking(
-        vendor_id: UID,
-        customer_id: UID,
+        vendor_id: ID,
+        customer_id: ID,
         wedding_date: u64,
         status: String,
         ctx: &mut TxContext,
@@ -126,27 +150,7 @@ module wedding_marketplace::marketplace {
         }
     }
 
-    public fun create_review(
-        vendor_id: UID,
-        customer_id: UID,
-        rating: u8,
-        comments: String,
-        ctx: &mut TxContext,
-    ): CustomerReview {
-        CustomerReview {
-            id: object::new(ctx),
-            vendor_id,
-            customer_id,
-            rating,
-            comments,
-        }
-    }
-
     // Functions to read data
-
-    public fun get_vendor(vendor: &Vendor): &Vendor {
-        vendor
-    }
 
     public fun get_package(package: &WeddingPackage): &WeddingPackage {
         package
@@ -165,10 +169,6 @@ module wedding_marketplace::marketplace {
     }
 
     // Functions to update entities
-
-    public fun update_vendor_name(vendor: &mut Vendor, new_name: String) {
-        vendor.name = new_name;
-    }
 
     public fun update_package_price(wedding_package: &mut WeddingPackage, new_price: u64) {
         wedding_package.price = new_price;
@@ -192,24 +192,16 @@ module wedding_marketplace::marketplace {
 
     // Functions to delete entities
 
-    public fun delete_vendor(vendor: Vendor) {
-        object::delete(vendor.id);
-    }
+    public fun delete_vendor(vendor: Booking) {
+        let Booking {
+            id,
+            vendor_id:_,
+            customer_id: _,
+            wedding_date: _,
+            status: _
+        } = vendor;
 
-    public fun delete_package(package: WeddingPackage) {
-        object::delete(package.id);
-    }
-
-    public fun delete_booking(booking: Booking) {
-        object::delete(booking.id);
-    }
-
-    public fun delete_review(review: CustomerReview) {
-        object::delete(review.id);
-    }
-
-    public fun delete_customer(customer: Customer) {
-        object::delete(customer.id);
+        object::delete(id);
     }
 
     // =================== Helper Functions ===================
